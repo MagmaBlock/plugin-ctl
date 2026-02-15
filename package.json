@@ -1,17 +1,43 @@
 {
-  "name": "plugin-ctl",
+  "name": "@magmablock/plugin-ctl",
   "version": "0.1.0",
   "description": "CLI for managing Paper/Spigot plugins across multiple servers",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magmablock/plugin-ctl.git"
+  },
+  "homepage": "https://github.com/magmablock/plugin-ctl#readme",
+  "bugs": {
+    "url": "https://github.com/magmablock/plugin-ctl/issues"
+  },
+  "keywords": [
+    "minecraft",
+    "paper",
+    "spigot",
+    "plugin",
+    "cli"
+  ],
   "type": "module",
   "bin": {
     "plugin-ctl": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "engines": {
     "node": ">=20"

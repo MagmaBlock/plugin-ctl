@@ -31,6 +31,12 @@ import { readCatalog } from "./storage/catalog.js";
 import { readPlanFile, writePlanFile } from "./storage/plan.js";
 import { listServerProfiles, readServerProfile } from "./storage/server.js";
 import { UserError } from "./infra/errors.js";
+import {
+  CURRENT_PACKAGE_NAME,
+  formatUpdateMessage,
+  runUpdateCheckNow,
+  startBackgroundUpdateCheck,
+} from "./infra/update-check.js";
 
 const providers = createProviderRegistry();
 const DEFAULT_SEARCH_SOURCES: PluginSource[] = ["modrinth", "hangar"];
@@ -387,6 +393,30 @@ program
   });
 
 program
+  .command("self")
+  .description("Self management commands")
+  .command("update-check")
+  .description("Check for a newer CLI version now")
+  .action(async () => {
+    const result = await runUpdateCheckNow({ ignoreDisable: true });
+    console.log(`Package: ${result.packageName}`);
+    console.log(`Current version: ${result.currentVersion}`);
+    console.log(`Channel: ${result.channel}`);
+    console.log(`Checked from: ${result.checkedFrom}`);
+    if (result.latestVersion) {
+      console.log(`Latest version: ${result.latestVersion}`);
+    } else {
+      console.log("Latest version: unknown");
+    }
+
+    if (result.updateAvailable && result.latestVersion) {
+      console.log(formatUpdateMessage(result.currentVersion, result.latestVersion));
+      return;
+    }
+    console.log("You are up to date.");
+  });
+
+program
   .command("maintenance")
   .description("Run maintenance operations")
   .command("reconcile")
@@ -436,6 +466,15 @@ program
   });
 
 async function main(): Promise<void> {
+  const argv = process.argv.slice(2);
+  const isSelfUpdateCheck = argv[0] === "self" && argv[1] === "update-check";
+  if (!isSelfUpdateCheck) {
+    startBackgroundUpdateCheck({
+      packageName: CURRENT_PACKAGE_NAME,
+      notify: (message) => console.warn(message),
+    });
+  }
+
   try {
     await program.parseAsync(process.argv);
   } catch (error) {

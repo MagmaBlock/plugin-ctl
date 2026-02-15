@@ -51,18 +51,30 @@
 
 说明：v1 暂不包含 SpigotMC 自动接入。
 
-## 安装
+## 安装（使用者）
 
 ```bash
-npm install
-npm run build
-npm link
+npm i -g @magmablock/plugin-ctl
 ```
 
 验证：
 
 ```bash
 plugin-ctl --help
+```
+
+升级：
+
+```bash
+npm i -g @magmablock/plugin-ctl@latest
+```
+
+## 本地开发安装（仓库维护者）
+
+```bash
+npm install
+npm run build
+npm link
 ```
 
 ## 第一次使用（推荐按顺序）
@@ -179,6 +191,12 @@ plugin-ctl apply .pluginctl/plans/<your-plan>.yaml
 plugin-ctl doctor
 ```
 
+### 手动检查 CLI 新版本
+
+```bash
+plugin-ctl self update-check
+```
+
 ### 执行本地待删除队列（建议在停服时执行）
 
 ```bash
@@ -200,6 +218,7 @@ plugin-ctl maintenance reconcile --all-servers
 - `plugin-ctl plan <server-id> [--all-servers]`
 - `plugin-ctl apply <plan-file>`
 - `plugin-ctl doctor`
+- `plugin-ctl self update-check`
 - `plugin-ctl maintenance reconcile <server-id|--all-servers>`
 
 ## 版本与安全策略
@@ -210,6 +229,45 @@ plugin-ctl maintenance reconcile --all-servers
 - add/upgrade 默认会将新 jar staged 到 `plugins/update/`，重启后生效
 - remove 默认入队到 `<serverRoot>/.pluginctl/pending.yaml`，由 `maintenance reconcile` 在合适时机执行删除
 - 所有写入采用临时文件 + 原子替换，避免半写入
+
+## 版本更新检测
+
+- CLI 默认在后台做静默更新检查，命中缓存周期为 24 小时
+- 稳定版默认检查 `latest` 通道，预发布版本默认检查 `next` 通道
+- 检测失败不会中断任何命令执行
+- 检测到新版本时会提示：
+  - `A new version is available: <current> -> <latest>`
+  - `Upgrade: npm i -g @magmablock/plugin-ctl@latest`
+- 可通过环境变量关闭自动检查：
+
+```bash
+export PLUGIN_CTL_DISABLE_UPDATE_CHECK=1
+```
+
+## 发布流程（维护者）
+
+发布前检查：
+
+```bash
+npm whoami
+npm pack --dry-run
+npm run typecheck
+npm test
+npm run build
+```
+
+稳定版发布（latest）：
+
+```bash
+npm publish --tag latest --access public
+```
+
+预发布版发布（next）：
+
+```bash
+npm version prerelease --preid next
+npm publish --tag next --access public
+```
 
 ## 你可以这样理解整体流程
 
