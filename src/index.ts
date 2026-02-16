@@ -28,8 +28,9 @@ import type {
 } from "./types.js";
 import { ensureWorkspace, loadWorkspace } from "./storage/workspace.js";
 import { readCatalog } from "./storage/catalog.js";
+import { deleteServerLock } from "./storage/lock.js";
 import { readPlanFile, writePlanFile } from "./storage/plan.js";
-import { listServerProfiles, readServerProfile } from "./storage/server.js";
+import { deleteServerProfile, listServerProfiles, readServerProfile } from "./storage/server.js";
 import { UserError } from "./infra/errors.js";
 import {
   CURRENT_PACKAGE_NAME,
@@ -220,6 +221,29 @@ serverCmd
       console.log(`Server added: ${serverId}`);
     },
   );
+
+serverCmd
+  .command("remove")
+  .description("Remove a server profile")
+  .argument("<server-id>", "Server ID")
+  .option("-y, --yes", "Skip confirmation")
+  .action(async (serverId: string, opts: { yes?: boolean }) => {
+    const context = await ensureWorkspace();
+    const profile = await readServerProfile(context, serverId);
+    if (!profile) {
+      throw new UserError(`Server ${serverId} not found`);
+    }
+
+    const confirmed = await confirmAction(`Remove server profile ${serverId}?`, opts.yes ?? false);
+    if (!confirmed) {
+      console.log("Cancelled. No changes applied.");
+      return;
+    }
+
+    await deleteServerProfile(context, serverId);
+    await deleteServerLock(context, serverId);
+    console.log(`Server removed: ${serverId} (profile + lock metadata only)`);
+  });
 
 const pluginCmd = program.command("plugin").description("Manage server plugins");
 pluginCmd

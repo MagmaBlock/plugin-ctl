@@ -8,8 +8,8 @@ import { applyServerPlan } from "../src/engine/apply.js";
 import { reconcileServerPendingDeletes } from "../src/engine/maintenance.js";
 import { ensureWorkspace } from "../src/storage/workspace.js";
 import { writeCatalog } from "../src/storage/catalog.js";
-import { writeServerProfile } from "../src/storage/server.js";
-import { readServerLock, writeServerLock } from "../src/storage/lock.js";
+import { deleteServerProfile, readServerProfile, writeServerProfile } from "../src/storage/server.js";
+import { deleteServerLock, lockPath, readServerLock, writeServerLock } from "../src/storage/lock.js";
 import { readPendingFile } from "../src/storage/pending.js";
 import type { CatalogFile, ServerProfile } from "../src/types.js";
 
@@ -138,6 +138,53 @@ describe("integration apply", () => {
         .then(() => true)
         .catch(() => false);
       expect(oldExists).toBe(false);
+    } finally {
+      process.chdir(cwd);
+    }
+  });
+
+  it("removes server profile metadata without deleting server files", async () => {
+    const tmp = await fs.mkdtemp(path.join(os.tmpdir(), "plugin-ctl-test-"));
+    const serverPath = path.join(tmp, "server3");
+    await fs.mkdir(path.join(serverPath, "plugins"), { recursive: true });
+    await fs.writeFile(path.join(serverPath, "server.properties"), "motd=test");
+
+    const cwd = process.cwd();
+    process.chdir(tmp);
+    try {
+      const context = await ensureWorkspace(tmp);
+      const profile: ServerProfile = {
+        serverId: "s3",
+        path: serverPath,
+        mcVersion: "1.21.4",
+        flavor: "paper",
+        plugins: [],
+      };
+
+      await writeServerProfile(context, profile);
+      await writeServerLock(context, {
+        serverId: "s3",
+        updatedAt: new Date().toISOString(),
+        plugins: [],
+      });
+
+      expect(await deleteServerProfile(context, "s3")).toBe(true);
+      await deleteServerLock(context, "s3");
+
+      const removedProfile = await readServerProfile(context, "s3");
+      expect(removedProfile).toBeUndefined();
+
+      const lockExists = await fs
+        .access(lockPath(context, "s3"))
+        .then(() => true)
+        .catch(() => false);
+      expect(lockExists).toBe(false);
+
+      const serverRootExists = await fs
+        .access(serverPath)
+        .then(() => true)
+        .catch(() => false);
+      expect(serverRootExists).toBe(true);
     } finally {
       process.chdir(cwd);
     }

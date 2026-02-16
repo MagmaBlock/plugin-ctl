@@ -139,6 +139,14 @@ plugin-ctl server list
 plugin-ctl catalog list
 ```
 
+### 删除服务器配置
+
+```bash
+plugin-ctl server remove lobby
+```
+
+说明：仅删除工作区内的 server profile 与 lock 元数据，不会删除真实服务器目录。
+
 ### 升级插件
 
 升级单个：
@@ -211,6 +219,7 @@ plugin-ctl maintenance reconcile --all-servers
 - `plugin-ctl catalog list`
 - `plugin-ctl server list`
 - `plugin-ctl server add <server-id> --path <dir> --mc <version> --flavor <paper|spigot>`
+- `plugin-ctl server remove <server-id>`
 - `plugin-ctl plugin add <server-id> <plugin-id> [--version <ver>]`
 - `plugin-ctl plugin remove <server-id> <plugin-id>`
 - `plugin-ctl plugin upgrade <server-id> <plugin-id|--all>`

@@ -18,6 +18,21 @@ export async function writeServerProfile(context: WorkspaceContext, profile: Ser
   await writeYamlFile(serverProfilePath(context, profile.serverId), profile);
 }
 
+export async function deleteServerProfile(
+  context: WorkspaceContext,
+  serverId: string,
+): Promise<boolean> {
+  try {
+    await fs.unlink(serverProfilePath(context, serverId));
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return false;
+    }
+    throw error;
+  }
+}
+
 export async function listServerProfiles(context: WorkspaceContext): Promise<ServerProfile[]> {
   const entries = await fs.readdir(context.paths.serversDir, { withFileTypes: true }).catch(() => []);
   const files = entries.filter((entry) => entry.isFile() && entry.name.endsWith(".yaml"));
